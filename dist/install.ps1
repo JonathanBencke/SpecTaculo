@@ -5,10 +5,10 @@
 .DESCRIPTION
     Copia os artefatos gerados em generated/ para a estrutura nativa da
     ferramenta escolhida (Claude Code, kimi-code, opencode, kiro-cli).
+    Também pode regenerar os artefatos antes de instalar.
 
-    Quando executado localmente, pode regenerar os artefatos a partir do
-    código-fonte. Quando executado remotamente via irm ... | iex, o script
-    baixa o release mais recente (zip pré-gerado) do GitHub.
+    Quando executado remotamente via irm ... | iex, o script clona o
+    repositório temporariamente, gera os artefatos e instala.
 
 .PARAMETER Tool
     CLI alvo: claude, kimi, opencode, kiro ou all.
@@ -19,7 +19,7 @@
 
 .PARAMETER Generate
     Se definido, executa src/generate.py antes de instalar.
-    Aplica-se apenas à execução local.
+    Em execução remota (irm), a geração é feita automaticamente.
 
 .EXAMPLE
     .\install.ps1 -Tool claude
@@ -96,36 +96,21 @@ $TempDir = $null
 $ScriptDir = $PSScriptRoot
 
 if ($RemoteMode) {
+    if (-not (Test-Command git)) {
+        Write-Error "Execução remota requer o Git instalado. Instale o Git ou baixe o repositório manualmente."
+        exit 1
+    }
+
     $TempDir = Join-Path $env:TEMP ("SpecTaculo-" + [System.Guid]::NewGuid().ToString())
-    New-Item -ItemType Directory -Path $TempDir -Force | Out-Null
-
-    Write-Host "Modo remoto detectado. Buscando release mais recente..."
-    try {
-        $release = Invoke-RestMethod -Uri "https://api.github.com/repos/JonathanBencke/SpecTaculo/releases/latest" -UseBasicParsing
-    } catch {
-        Write-Error "Falha ao buscar o release mais recente: $_"
+    Write-Host "Modo remoto detectado. Clonando SpecTaculo para: $TempDir"
+    & git clone --depth 1 https://github.com/JonathanBencke/SpecTaculo.git $TempDir
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Falha ao clonar o repositório remoto."
         exit 1
     }
-
-    $asset = $release.assets | Where-Object { $_.name -like "SpecTaculo-*.zip" } | Select-Object -First 1
-    if (-not $asset) {
-        Write-Error "Nenhum asset .zip encontrado no release $($release.tag_name)."
-        exit 1
-    }
-
-    $zipUrl = $asset.browser_download_url
-    $zipFile = Join-Path $TempDir $asset.name
-    Write-Host "Baixando $($asset.name) ($($asset.size) bytes)..."
-    try {
-        Invoke-WebRequest -Uri $zipUrl -OutFile $zipFile -UseBasicParsing
-    } catch {
-        Write-Error "Falha ao baixar o release: $_"
-        exit 1
-    }
-
-    Write-Host "Extraindo release..."
-    Expand-Archive -Path $zipFile -DestinationPath $TempDir -Force
     $ScriptDir = $TempDir
+    # Em modo remoto, sempre regenera os artefatos a partir do código-fonte
+    $Generate = $true
 }
 
 try {
@@ -138,8 +123,8 @@ try {
         $null
     }
 
-    # Regenera artefatos se solicitado (apenas modo local)
-    if (-not $RemoteMode -and $Generate) {
+    # Regenera artefatos se solicitado
+    if ($Generate) {
         if (-not $PythonPath) {
             Write-Error "Python não encontrado. Instale o Python ou crie um venv com as dependências."
             exit 1
@@ -154,7 +139,7 @@ try {
 
     $source = Join-Path $ScriptDir "generated"
     if (-not (Test-Path $source)) {
-        Write-Error "Diretório 'generated' não encontrado em '$ScriptDir'."
+        Write-Error "Diretório 'generated' não encontrado em '$ScriptDir'. Use -Generate ou execute src/generate.py."
         exit 1
     }
 

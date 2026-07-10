@@ -1,0 +1,8 @@
+{
+  "tag_name": "v1.0.0",
+  "target_commitish": "main",
+  "name": "SpecTaculo v1.0.0",
+  "body": "Primeiro release do SpecTaculo com artefatos pre-gerados para instalacao remota sem clonar o repositorio.",
+  "draft": false,
+  "prerelease": false
+}
