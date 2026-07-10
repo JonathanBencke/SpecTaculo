@@ -1,0 +1,5 @@
+{
+  "name": "{{ name }}",
+  "description": {{ description | replace('\n', ' ') | tojson_unicode }},
+  "systemPrompt": {{ ("# " ~ name ~ "\n\n## Entrada\n" ~ entry ~ "\n\n## Saída\n" ~ output ~ "\n\n## Regras\n" ~ rules|join('\n') ~ "\n\n## Instruções\n" ~ prompt) | tojson_unicode }}
+}

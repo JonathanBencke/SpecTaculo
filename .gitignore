@@ -1,0 +1,5 @@
+.venv/
+generated/
+test-install/
+__pycache__/
+*.pyc
