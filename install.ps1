@@ -1,11 +1,14 @@
 <#
 .SYNOPSIS
-    Instala a esteira de agentes SDD em uma CLI suportada.
+    Instala a esteira de agentes SpecTaculo em uma CLI suportada.
 
 .DESCRIPTION
     Copia os artefatos gerados em generated/ para a estrutura nativa da
     ferramenta escolhida (Claude Code, kimi-code, opencode, kiro-cli).
     Também pode regenerar os artefatos antes de instalar.
+
+    Quando executado remotamente via irm ... | iex, o script clona o
+    repositório temporariamente, gera os artefatos e instala.
 
 .PARAMETER Tool
     CLI alvo: claude, kimi, opencode, kiro ou all.
@@ -16,12 +19,13 @@
 
 .PARAMETER Generate
     Se definido, executa src/generate.py antes de instalar.
+    Em execução remota (irm), a geração é feita automaticamente.
 
 .EXAMPLE
     .\install.ps1 -Tool claude
     .\install.ps1 -Tool all -Generate
     .\install.ps1 -Tool kimi -Target ..\meu-projeto
-    $env:SPECTACULO_TOOL = "claude"; irm https://.../install.ps1 | iex
+    $env:SPECTACULO_TOOL = "claude"; irm https://raw.githubusercontent.com/JonathanBencke/SpecTaculo/main/install.ps1 | iex
 #>
 [CmdletBinding()]
 param(
@@ -39,9 +43,6 @@ param(
 # Garante codificação UTF-8 para saída no console
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
-
-# Resolve o diretório onde o script reside (suporta execução via irm | iex)
-$ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Get-Location }
 
 function Test-Command($cmd) {
     $null -ne (Get-Command $cmd -ErrorAction SilentlyContinue)
@@ -89,39 +90,70 @@ $Target = Resolve-Path $Target
 Write-Host "Instalando SpecTaculo para: $Tool"
 Write-Host "Destino: $Target"
 
-# Resolve o interpretador Python (prioriza venv do projeto)
-$PythonPath = if (Test-Path (Join-Path $ScriptDir ".venv/Scripts/python.exe")) {
-    Join-Path $ScriptDir ".venv/Scripts/python.exe"
-} elseif (Test-Command python) {
-    "python"
-} else {
-    $null
-}
+# Detecta execução remota (irm ... | iex)
+$RemoteMode = [string]::IsNullOrEmpty($PSScriptRoot)
+$TempDir = $null
+$ScriptDir = $PSScriptRoot
 
-# Regenera artefatos se solicitado
-if ($Generate) {
-    if (-not $PythonPath) {
-        Write-Error "Python não encontrado. Instale o Python ou crie um venv com as dependências."
+if ($RemoteMode) {
+    if (-not (Test-Command git)) {
+        Write-Error "Execução remota requer o Git instalado. Instale o Git ou baixe o repositório manualmente."
         exit 1
     }
-    Write-Host "Gerando artefatos com: $PythonPath"
-    & $PythonPath (Join-Path $ScriptDir "src/generate.py") $Tool
+
+    $TempDir = Join-Path $env:TEMP ("SpecTaculo-" + [System.Guid]::NewGuid().ToString())
+    Write-Host "Modo remoto detectado. Clonando SpecTaculo para: $TempDir"
+    & git clone --depth 1 https://github.com/JonathanBencke/SpecTaculo.git $TempDir
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "Falha ao gerar artefatos."
+        Write-Error "Falha ao clonar o repositório remoto."
         exit 1
     }
+    $ScriptDir = $TempDir
+    # Em modo remoto, sempre regenera os artefatos a partir do código-fonte
+    $Generate = $true
 }
 
-$source = Join-Path $ScriptDir "generated"
-if (-not (Test-Path $source)) {
-    Write-Error "Diretório 'generated' não encontrado em '$ScriptDir'. Use -Generate ou execute src/generate.py."
-    exit 1
-}
+try {
+    # Resolve o interpretador Python (prioriza venv do projeto)
+    $PythonPath = if (Test-Path (Join-Path $ScriptDir ".venv/Scripts/python.exe")) {
+        Join-Path $ScriptDir ".venv/Scripts/python.exe"
+    } elseif (Test-Command python) {
+        "python"
+    } else {
+        $null
+    }
 
-# Instalação
-$tools = if ($Tool -eq "all") { @("claude", "kimi", "opencode", "kiro") } else { @($Tool) }
-foreach ($t in $tools) {
-    Install-Tool -tool $t -source $source -dest $Target
-}
+    # Regenera artefatos se solicitado
+    if ($Generate) {
+        if (-not $PythonPath) {
+            Write-Error "Python não encontrado. Instale o Python ou crie um venv com as dependências."
+            exit 1
+        }
+        Write-Host "Gerando artefatos com: $PythonPath"
+        & $PythonPath (Join-Path $ScriptDir "src/generate.py") $Tool
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "Falha ao gerar artefatos."
+            exit 1
+        }
+    }
 
-Write-Host "Instalação concluída." -ForegroundColor Cyan
+    $source = Join-Path $ScriptDir "generated"
+    if (-not (Test-Path $source)) {
+        Write-Error "Diretório 'generated' não encontrado em '$ScriptDir'. Use -Generate ou execute src/generate.py."
+        exit 1
+    }
+
+    # Instalação
+    $tools = if ($Tool -eq "all") { @("claude", "kimi", "opencode", "kiro") } else { @($Tool) }
+    foreach ($t in $tools) {
+        Install-Tool -tool $t -source $source -dest $Target
+    }
+
+    Write-Host "Instalação concluída." -ForegroundColor Cyan
+}
+finally {
+    if ($RemoteMode -and $TempDir -and (Test-Path $TempDir)) {
+        Write-Host "Limpando arquivos temporários..."
+        Remove-Item -Path $TempDir -Recurse -Force
+    }
+}
