@@ -1,5 +1,9 @@
 .venv/
 generated/
 test-install/
+dist/
+*.zip
+release.json
+release-response.json
 __pycache__/
 *.pyc
