@@ -3,10 +3,10 @@ description: >
   Orquestrador da esteira SpecTaculo. Coordena a execução dos agentes na ordem
   correta, decide quando prosseguir, retroceder ou pedir input humano.
 entry: Necessidade/task de entrada (texto ou link).
-output: Execução completa da esteira e artefatos finais (TASK.md, SPEC.md, PLAN.md, código).
+output: Execução completa da esteira e artefatos finais em <Spec Dir>/.
 rules:
   - Nunca executar agentes fora de ordem.
-  - Sempre consultar TASK.md antes de decidir o próximo passo.
+  - Sempre consultar <Spec Dir>/TASK.md antes de decidir o próximo passo.
   - Pedir input humano quando houver decisões pendentes críticas.
   - Manter o usuário informado sobre a fase atual.
 prompt: |
@@ -16,12 +16,12 @@ prompt: |
   {{ user_input }}
 
   ## Sequência da esteira
-  1. **spectaculo-intake**: valide e colete contexto.
-  2. **spectaculo-spec**: escreva a especificação.
-  3. **spectaculo-validate**: revise a spec.
+  1. **spectaculo-intake**: valide e colete contexto; defina `<Spec Dir>` (ex: `specs/GH-123/`).
+  2. **spectaculo-spec**: escreva a especificação em `<Spec Dir>/SPEC.md`.
+  3. **spectaculo-validate**: revise a spec em `<Spec Dir>/SPEC.md`.
      - Se `PENDING`: pare e peça esclarecimentos ao usuário.
      - Se `APPROVE`: continue.
-  4. **spectaculo-plan**: crie o plano executável.
+  4. **spectaculo-plan**: crie o plano executável em `<Spec Dir>/PLAN.md`.
   5. **spectaculo-execute**: execute o plano.
      - Se surgir bloqueio crítico: pare e peça ao usuário.
   6. **spectaculo-review**: valide a entrega.
@@ -29,13 +29,14 @@ prompt: |
      - Se `APPROVE`: finalize.
 
   ## Regras de orquestração
-  - Antes de cada decisão, leia o `TASK.md`.
+  - Antes de cada decisão, leia o `<Spec Dir>/TASK.md`.
   - NÃO pule etapas.
   - NÃO execute spectaculo-execute sem spec aprovada.
   - Sempre informe o usuário em qual fase a esteira está.
   - Quando precisar de input humano, faça perguntas objetivas e aguarde resposta.
+  - Se o usuário fornecer um ID (GitHub, Jira, etc.), use-o para nomear a pasta em `specs/`.
 
   ## Saída esperada
-  - `TASK.md` sempre visível e atualizado
-  - `SPEC.md`, `PLAN.md` e artefatos finais quando concluído
+  - `<Spec Dir>/TASK.md` sempre visível e atualizado
+  - `<Spec Dir>/SPEC.md`, `<Spec Dir>/PLAN.md` e artefatos finais quando concluído
   - Mensagens claras indicando a fase atual e próximos passos

@@ -91,19 +91,19 @@ Após instalar, invoque o orquestrador na CLI escolhida:
 ### Claude Code
 
 ```text
-/spectaculo-run Preciso de um endpoint Flask que receba nome e email, valide o email e salve em CSV
+/spectaculo-run #42 Preciso de um endpoint Flask que receba nome e email, valide o email e salve em CSV
 ```
 
 ### kimi-code
 
 ```text
-/spectaculo-run Preciso de um endpoint Flask que receba nome e email, valide o email e salve em CSV
+/spectaculo-run PROJ-456 Preciso refatorar o módulo de autenticação para usar JWT
 ```
 
 ### opencode
 
 ```text
-/agent spectaculo-run Preciso de um endpoint Flask que receba nome e email, valide o email e salve em CSV
+/agent spectaculo-run Preciso de uma página de login com validação de campos
 ```
 
 ### kiro-cli
@@ -112,7 +112,7 @@ Após instalar, invoque o orquestrador na CLI escolhida:
 /agent swap spectaculo-run
 ```
 
-Depois digite a task no chat.
+Depois digite a task no chat. O `spectaculo-intake` identificará o ID (GitHub, Jira) ou sugerirá um nome para a pasta em `specs/`.
 
 ---
 
@@ -121,9 +121,9 @@ Depois digite a task no chat.
 | Agente | Emoji | Função |
 |--------|-------|--------|
 | `spectaculo-intake` | 🚪 | Recebe a task, coleta contexto e identifica gaps |
-| `spectaculo-spec` | 📝 | Escreve a especificação formal (`SPEC.md`) |
+| `spectaculo-spec` | 📝 | Escreve a especificação formal (`<Spec Dir>/SPEC.md`) |
 | `spectaculo-validate` | 🛡️ | Revisa a spec e bloqueia se estiver incompleta |
-| `spectaculo-plan` | 🗺️ | Cria o plano executável (`PLAN.md`) |
+| `spectaculo-plan` | 🗺️ | Cria o plano executável (`<Spec Dir>/PLAN.md`) |
 | `spectaculo-execute` | ⚒️ | Executa o plano e produz código/artefatos |
 | `spectaculo-review` | ✅ | Valida a entrega contra a spec |
 | `spectaculo-run` | 🎭 | Orquestrador que coordena toda a esteira |
@@ -148,11 +148,37 @@ graph LR
 
 ## 📁 Artefatos gerados
 
-A esteira mantém três artefatos principais no seu projeto:
+A esteira mantém três artefatos principais no seu projeto, organizados em subpastas dentro de `specs/`:
 
-- **`TASK.md`** — Todo-list central. Sempre atualizado com a fase atual, checklist e decisões pendentes.
-- **`SPEC.md`** — Especificação formal: escopo, critérios de aceite, contratos e decisões pendentes.
-- **`PLAN.md`** — Plano executável com passos ordenados e verificáveis.
+```
+specs/
+├── GH-42/                       # ID do GitHub
+│   ├── TASK.md
+│   ├── SPEC.md
+│   └── PLAN.md
+├── PROJ-456/                    # ID do Jira
+│   ├── TASK.md
+│   ├── SPEC.md
+│   └── PLAN.md
+└── endpoint-flask-csv/          # Nome sugerido para input sem ID
+    ├── TASK.md
+    ├── SPEC.md
+    └── PLAN.md
+```
+
+- **`<Spec Dir>/TASK.md`** — Todo-list central. Sempre atualizado com a fase atual, checklist e decisões pendentes.
+- **`<Spec Dir>/SPEC.md`** — Especificação formal: escopo, critérios de aceite, contratos e decisões pendentes.
+- **`<Spec Dir>/PLAN.md`** — Plano executável com passos ordenados e verificáveis.
+
+### Como o `<Spec Dir>` é escolhido?
+
+O agente `spectaculo-intake` decide automaticamente:
+
+| Tipo de entrada | Exemplo | `<Spec Dir>` resultante |
+|-----------------|---------|-------------------------|
+| Issue/PR do GitHub | `#42` ou URL de issue | `specs/GH-42/` |
+| Ticket do Jira | `PROJ-456` | `specs/PROJ-456/` |
+| Texto puro | "Preciso de uma página de login..." | `specs/pagina-login/` (sugerido; usuário confirma) |
 
 ---
 
