@@ -56,6 +56,8 @@ $env:SPECTACULO_TOOL = "claude"; irm https://raw.githubusercontent.com/JonathanB
 $env:SPECTACULO_TOOL = "all"; irm https://raw.githubusercontent.com/JonathanBencke/SpecTaculo/main/install.ps1 | iex
 ```
 
+> **Não precisa de Git, Python ou clonar o repositório.** O script baixa o release mais recente e instala tudo automaticamente.
+
 ### Instalação local
 
 ```powershell
