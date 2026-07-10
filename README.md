@@ -120,12 +120,12 @@ Depois digite a task no chat. O `spectaculo-intake` identificará o ID (GitHub, 
 
 | Agente | Emoji | Função |
 |--------|-------|--------|
-| `spectaculo-intake` | 🚪 | Recebe a task, coleta contexto e identifica gaps |
+| `spectaculo-intake` | 🚪 | Recebe a task, coleta contexto, identifica gaps e detecta o changelog do projeto |
 | `spectaculo-spec` | 📝 | Escreve a especificação formal (`<Spec Dir>/SPEC.md`) |
 | `spectaculo-validate` | 🛡️ | Revisa a spec e bloqueia se estiver incompleta |
 | `spectaculo-plan` | 🗺️ | Cria o plano executável (`<Spec Dir>/PLAN.md`) |
-| `spectaculo-execute` | ⚒️ | Executa o plano e produz código/artefatos |
-| `spectaculo-review` | ✅ | Valida a entrega contra a spec |
+| `spectaculo-execute` | ⚒️ | Executa o plano, produz código/artefatos e atualiza o changelog se existir |
+| `spectaculo-review` | ✅ | Valida a entrega contra a spec e o changelog |
 | `spectaculo-run` | 🎭 | Orquestrador que coordena toda a esteira |
 
 ### Fluxo da esteira
@@ -179,6 +179,18 @@ O agente `spectaculo-intake` decide automaticamente:
 | Issue/PR do GitHub | `#42` ou URL de issue | `specs/GH-42/` |
 | Ticket do Jira | `PROJ-456` | `specs/PROJ-456/` |
 | Texto puro | "Preciso de uma página de login..." | `specs/pagina-login/` (sugerido; usuário confirma) |
+
+---
+
+## 📝 Changelog
+
+Se o seu projeto já tiver um arquivo de changelog (ex: `CHANGELOG.md`, `HISTORY.md`, `RELEASES.md`), o SpecTaculo detecta automaticamente:
+
+- **`spectaculo-intake`** → identifica o arquivo e o padrão usado.
+- **`spectaculo-execute`** → adiciona uma entrada compatível com a mudança implementada.
+- **`spectaculo-review`** → verifica se o changelog foi atualizado corretamente.
+
+Se o padrão do changelog não for reconhecido, a esteira para e pede orientação ao invés de bagunçar o arquivo.
 
 ---
 

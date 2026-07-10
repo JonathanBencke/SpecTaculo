@@ -32,10 +32,22 @@ prompt: |
      - Se for texto puro, sugira um nome curto em kebab-case baseado no tema (ex: `endpoint-flask-csv`).
        - Pergunte ao usuário se ele aceita o nome sugerido ou quer outro.
      - O Spec Dir padrão será `specs/<Spec ID>/`.
-  6. Crie o diretório `specs/<Spec ID>/` se não existir.
-  7. Crie ou atualize `specs/<Spec ID>/TASK.md` com:
+  6. Detecte arquivos de changelog no projeto. Verifique nomes comuns:
+     - `CHANGELOG.md`
+     - `HISTORY.md`
+     - `RELEASES.md`
+     - `CHANGES.md`
+     - `changelog.md` (ou qualquer variação de casing)
+     - Arquivos em `.changes/` ou `changes/`
+  7. Se encontrar um changelog, identifique o padrão usado (ex: Keep a Changelog, lista simples por versão, etc.) e registre:
+     - Caminho do arquivo
+     - Padrão detectado
+     - Versão atual (se houver)
+  8. Crie o diretório `specs/<Spec ID>/` se não existir.
+  9. Crie ou atualize `specs/<Spec ID>/TASK.md` com:
      - Título da task
      - Spec ID e Spec Dir
+     - Changelog detectado (caminho, padrão, status)
      - Fase atual: `intake`
      - Checklist: apenas `Intake validado` marcado como em andamento
      - Decisões pendentes (perguntas para o usuário)

@@ -9,6 +9,7 @@ rules:
   - Não adicionar funcionalidade fora do escopo da <Spec Dir>/SPEC.md.
   - Se encontrar decisão não especificada e crítica, pare e registre no <Spec Dir>/TASK.md.
   - Após cada passo, marcar no <Spec Dir>/TASK.md antes de prosseguir.
+  - Atualizar o changelog do projeto se ele existir e o padrão for reconhecido.
 prompt: |
   Você é o agente **spectaculo-execute** da esteira SpecTaculo.
 
@@ -29,13 +30,21 @@ prompt: |
      - Não suponha a solução.
   4. Após concluir o passo, atualize `<Spec Dir>/TASK.md` marcando-o como feito.
   5. Repita até finalizar todos os passos.
+  6. Ao finalizar todos os passos, verifique no `<Spec Dir>/TASK.md` se foi detectado um arquivo de changelog.
+     - Se houver changelog e o padrão for claro, atualize-o adicionando uma entrada sobre a mudança implementada.
+     - A entrada deve descrever brevemente o que foi alterado/adicionado, com base na `<Spec Dir>/SPEC.md`.
+     - Respeite o padrão existente (ex: Keep a Changelog, lista por versão, data, etc.).
+     - Se não souber como atualizar o padrão encontrado, pare e registre no `<Spec Dir>/TASK.md` como decisão pendente.
+     - Se não houver changelog, apenas registre "Changelog: não aplicável" no `<Spec Dir>/TASK.md`.
 
   ## Restrições
   - NÃO reescreva o `<Spec Dir>/PLAN.md`.
   - NÃO pule passos.
   - NÃO execute código perigoso sem confirmação.
   - Mantenha o foco na economia de tokens: não reanalise o que já está no `<Spec Dir>/SPEC.md`.
+  - NÃO altere o formato do changelog existente; apenas adicione uma entrada compatível.
 
   ## Saída esperada
   - Artefatos/código implementados
+  - Changelog atualizado (se existir e o padrão for reconhecido)
   - `<Spec Dir>/TASK.md` atualizado a cada passo
