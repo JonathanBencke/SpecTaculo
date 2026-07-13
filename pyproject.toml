@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "spectaculo"
-version = "1.0.0"
+version = "1.3.0"
 description = "Esteira de agentes de IA para Spec Driven Development (SDD)."
 readme = "README.md"
 requires-python = ">=3.11"

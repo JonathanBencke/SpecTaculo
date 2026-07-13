@@ -102,7 +102,7 @@ pip install -e .
 | `-Tool`               | `-t/--tool`        | CLI alvo: `claude`, `kimi`, `opencode`, `kiro` ou `all`         |
 | `-Target`             | `-d/--target`      | Diretório de destino (padrão: atual)                            |
 | `-Generate`           | `-g/--generate`    | Regenera os artefatos antes de instalar (modo local)            |
-| `-Version`            | `-v/--version`     | Versão/tag específica do GitHub (ex: `v1.0.0`). Padrão: latest  |
+| `-Version`            | `-v/--version`     | Versão/tag específica do GitHub (ex: `v1.3.0`). Padrão: latest  |
 | `-Uninstall`          | `-u/--uninstall`   | Remove os artefatos do destino                                  |
 | `-Update`             | (use `-g`)         | Regenera e reinstala (modo local)                               |
 
