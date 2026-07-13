@@ -1,0 +1,19 @@
+{
+  "spec_id": "GH-42",
+  "spec_dir": "specs/GH-42/",
+  "title": "Endpoint Flask que recebe nome/email e salva em CSV",
+  "phase": "validate",
+  "status": "pending",
+  "attempts": {
+    "validate": 1,
+    "review": 0
+  },
+  "max_attempts": 3,
+  "created_at": "2026-07-13T12:00:00Z",
+  "updated_at": "2026-07-13T12:05:30Z",
+  "history": [
+    { "phase": "intake",   "status": "APPROVE", "at": "2026-07-13T12:01:00Z", "next": "spectaculo-spec" },
+    { "phase": "spec",     "status": "APPROVE", "at": "2026-07-13T12:03:00Z", "next": "spectaculo-validate" },
+    { "phase": "validate", "status": "PENDING", "at": "2026-07-13T12:05:30Z", "next": "humano", "reason": "caminho do CSV não especificado" }
+  ]
+}
