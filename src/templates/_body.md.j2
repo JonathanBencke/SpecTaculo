@@ -1,0 +1,56 @@
+{# Macro com o corpo comum a todas as CLIs (Markdown e JSON).
+   Os wrappers apenas definem frontmatter/cabeçalho e chamam esta macro.
+   Variável `tool` (opcional): quando informada e o agente for o
+   orquestrador (spectaculo-run), um bloco de dispatch específico da CLI
+   é anexado ao prompt. #}
+{% macro body(name, entry, output, rules, prompt, tool=None) %}# {{ name }}
+
+## Entrada
+{{ entry }}
+
+## Saída
+{{ output }}
+
+## Regras
+{% for rule in rules %}
+- {{ rule }}
+{% endfor %}
+
+## Instruções
+{{ prompt }}
+{% if name == 'spectaculo-run' and tool %}
+
+## Dispatch específico da CLI ({{ tool }})
+{{ dispatch_hint(tool) }}
+{% endif %}{% endmacro %}
+
+
+{% macro dispatch_hint(tool) %}{% if tool == 'claude' %}
+Você está rodando no **Claude Code**. Para invocar cada fase da esteira:
+- Use **sub-agents** (ferramenta `Task`) para delegar a cada agente `spectaculo-*`,
+  passando o contexto necessário e esperando o bloco `## Handoff` de volta.
+- Use **TodoWrite** para espelhar o checklist do `<Spec Dir>/TASK.md` e manter
+  visibilidade do progresso na UI.
+- Após cada sub-agent, leia `<Spec Dir>/TASK.md` e `<Spec Dir>/STATE.json` antes
+  de decidir o próximo passo.
+{% elif tool == 'kimi' %}
+Você está rodando no **kimi-code**. Para invocar cada fase:
+- Use as skills `spectaculo-*` instaladas em `.kimi-code/skills/` como passos
+  sequenciais, repassando o output do bloco `## Handoff` de uma fase para a próxima.
+- Mantenha o `<Spec Dir>/TASK.md` como fonte de verdade do progresso.
+- Em PENDING/BLOCKED, devolva a pergunta ao usuário e aguarde antes de prosseguir.
+{% elif tool == 'opencode' %}
+Você está rodando no **opencode**. Para invocar cada fase:
+- Use a ferramenta **Task** com `subagent_type` apontando para cada agente
+  `spectaculo-*` (ex.: `spectaculo-intake`, `spectaculo-spec`, ...).
+- Mantenha o `<Spec Dir>/TASK.md` sincronizado com o `TodoWrite` do opencode.
+- Após cada sub-agente, registre o `## Handoff` em `<Spec Dir>/TASK.md` e
+  atualize `<Spec Dir>/STATE.json` antes da próxima delegação.
+{% elif tool == 'kiro' %}
+Você está rodando no **kiro-cli**. Para invocar cada fase:
+- Use o comando `/agent swap spectaculo-*` para alternar para o agente de cada
+  fase, lendo/escrevendo `<Spec Dir>/TASK.md` e `<Spec Dir>/STATE.json` entre trocas.
+- Preserve o bloco `## Handoff` ao trocar de agente para não perder contexto.
+- Em PENDING/BLOCKED, retorne ao usuário com a pergunta objetiva.
+{% endif %}{% endmacro %}
+

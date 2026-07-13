@@ -50,3 +50,12 @@ prompt: |
   ## Saída esperada
   - Arquivo `<Spec Dir>/SPEC.md` completo
   - `<Spec Dir>/TASK.md` atualizado (fase `spec`, checklist atualizado)
+
+  ## Handoff
+  Ao concluir, emita no final da resposta (e anexe em `<Spec Dir>/TASK.md`
+  → "Histórico de handoffs") uma entrada no formato canônico:
+  - **Fase:** spec
+  - **Status:** APPROVE | PENDING | BLOCKED
+  - **Próximo:** spectaculo-validate | humano
+  - **Artefatos:** `<Spec Dir>/SPEC.md`, `<Spec Dir>/TASK.md`
+  - **Questões em aberto:** lista ou "nenhuma"

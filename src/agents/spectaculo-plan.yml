@@ -47,3 +47,12 @@ prompt: |
   ## Saída esperada
   - Arquivo `<Spec Dir>/PLAN.md`
   - `<Spec Dir>/TASK.md` atualizado (fase `plan`)
+
+  ## Handoff
+  Ao concluir, emita no final da resposta (e anexe em `<Spec Dir>/TASK.md`
+  → "Histórico de handoffs") uma entrada no formato canônico:
+  - **Fase:** plan
+  - **Status:** APPROVE | PENDING | BLOCKED
+  - **Próximo:** spectaculo-execute | humano
+  - **Artefatos:** `<Spec Dir>/PLAN.md`, `<Spec Dir>/TASK.md`
+  - **Questões em aberto:** lista ou "nenhuma"

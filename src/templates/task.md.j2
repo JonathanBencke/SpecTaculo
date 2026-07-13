@@ -1,0 +1,45 @@
+{# Template canônico de TASK.md — referência estrutural usada por todos
+   os agentes da esteira. Os agentes NÃO renderizam este Jinja diretamente;
+   eles seguem esta estrutura ao criar/atualizar <Spec Dir>/TASK.md.
+
+   Variáveis (apenas para documentação / scaffold futuro):
+     spec_id, spec_dir, title, phase, changelog_path, changelog_pattern #}
+# TASK: {{ title }}
+
+**Spec ID:** `{{ spec_id }}`
+**Spec Dir:** `{{ spec_dir }}`
+**Fase atual:** `{{ phase | default("intake") }}`
+**Criado em:** `{{ created_at | default("<timestamp ISO-8601>") }}`
+
+## Changelog detectado
+- **Caminho:** `{{ changelog_path | default("nenhum") }}`
+- **Padrão:** `{{ changelog_pattern | default("n/a") }}`
+- **Status:** `{{ changelog_status | default("n/a") }}`
+
+## Checklist da esteira
+- [ ] Intake validado
+- [ ] Spec escrita (`SPEC.md`)
+- [ ] Spec aprovada (`validate` → APPROVE)
+- [ ] Plano criado (`PLAN.md`)
+- [ ] Execução (0/N passos concluídos)
+- [ ] Review (`review` → APPROVE)
+- [ ] Entrega finalizada
+
+## Decisões pendentes
+> Liste aqui perguntas objetivas para o usuário. Cada item deve ter:
+> - **Pergunta:** ...
+> - **Bloqueia:** sim/não
+> - **Contexto:** ...
+
+- _(nenhuma)_
+
+## Histórico de handoffs
+> Cada agente, ao terminar, anexa uma entrada seguindo o formato:
+> `[<fase>] <status> — próximo: <agente|humano> — artefatos: <lista>`
+
+- _(vazio)_
+
+## Bloqueios
+> Use apenas se a esteira não puder prosseguir sem ação externa.
+
+- _(nenhum)_

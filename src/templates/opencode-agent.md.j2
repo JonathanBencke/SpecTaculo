@@ -1,20 +1,13 @@
+{% from '_body.md.j2' import body %}
 ---
 name: {{ name }}
 description: {{ description | replace('\n', ' ') }}
----
-
-# {{ name }}
-
-## Entrada
-{{ entry }}
-
-## Saída
-{{ output }}
-
-## Regras
-{% for rule in rules %}
-- {{ rule }}
+mode: {{ mode }}
+{% if tools %}
+tools:
+{% for t in tools %}
+  - {{ t }}
 {% endfor %}
-
-## Instruções
-{{ prompt }}
+{% endif %}
+---
+{{ body(name, entry, output, rules, prompt, tool) }}

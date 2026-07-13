@@ -1,0 +1,21 @@
+{# STATE.json — estado persistente da esteira para resume confiável.
+   O orquestrador (e o intake) criam/mantêm <Spec Dir>/STATE.json seguindo
+   este formato. Permite retomar uma esteira interrompida sem inferir o
+   estado apenas pelo TASK.md. #}
+{
+  "spec_id": "{{ spec_id | default('<GH-XX|PROJ-XX|kebab-name>') }}",
+  "spec_dir": "{{ spec_dir | default('specs/<spec_id>/') }}",
+  "title": "{{ title | default('<título da task>') }}",
+  "phase": "{{ phase | default('intake') }}",
+  "status": "{{ status | default('pending') }}",
+  "attempts": {
+    "validate": {{ validate_attempts | default(0) }},
+    "review": {{ review_attempts | default(0) }}
+  },
+  "max_attempts": {{ max_attempts | default(3) }},
+  "created_at": "{{ created_at | default('<ISO-8601>') }}",
+  "updated_at": "{{ updated_at | default('<ISO-8601>') }}",
+  "history": [
+    {{ history | default([]) | tojson_unicode }}
+  ]
+}

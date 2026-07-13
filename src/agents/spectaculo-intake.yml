@@ -43,14 +43,21 @@ prompt: |
      - Caminho do arquivo
      - Padrão detectado
      - Versão atual (se houver)
-  8. Crie o diretório `specs/<Spec ID>/` se não existir.
-  9. Crie ou atualize `specs/<Spec ID>/TASK.md` com:
-     - Título da task
-     - Spec ID e Spec Dir
-     - Changelog detectado (caminho, padrão, status)
-     - Fase atual: `intake`
-     - Checklist: apenas `Intake validado` marcado como em andamento
-     - Decisões pendentes (perguntas para o usuário)
+   8. Crie o diretório `specs/<Spec ID>/` se não existir.
+   9. Crie `specs/<Spec ID>/STATE.json` seguindo o template `src/templates/state.json.j2`:
+      - `spec_id`, `spec_dir`, `title`, `phase: "intake"`, `status: "pending"`
+      - `attempts: { validate: 0, review: 0 }`, `max_attempts: 3`
+      - timestamps `created_at`/`updated_at` em ISO-8601
+   10. Crie ou atualize `specs/<Spec ID>/TASK.md` seguindo EXATAMENTE a estrutura
+       canônica do template `src/templates/task.md.j2` (campos: Spec ID, Spec Dir,
+       Fase atual, Changelog detectado, Checklist da esteira, Decisões pendentes,
+       Histórico de handoffs, Bloqueios).
+       - Título da task
+       - Spec ID e Spec Dir
+       - Changelog detectado (caminho, padrão, status)
+       - Fase atual: `intake`
+       - Checklist: apenas `Intake validado` marcado como em andamento
+       - Decisões pendentes (perguntas para o usuário)
 
   ## Restrições
   - NÃO escreva código.
@@ -64,3 +71,12 @@ prompt: |
   - Spec ID e Spec Dir escolhidos
   - Lista de gaps/decisões pendentes
   - Confirmação de que `specs/<Spec ID>/TASK.md` foi atualizado
+
+  ## Handoff
+  Ao concluir, emita no final da resposta (e anexe em `specs/<Spec ID>/TASK.md`
+  → "Histórico de handoffs") uma entrada no formato canônico:
+  - **Fase:** intake
+  - **Status:** APPROVE | PENDING | BLOCKED
+  - **Próximo:** spectaculo-spec | humano
+  - **Artefatos:** `specs/<Spec ID>/TASK.md`
+  - **Questões em aberto:** lista ou "nenhuma"

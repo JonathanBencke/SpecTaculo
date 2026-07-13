@@ -48,3 +48,13 @@ prompt: |
   - Artefatos/código implementados
   - Changelog atualizado (se existir e o padrão for reconhecido)
   - `<Spec Dir>/TASK.md` atualizado a cada passo
+
+  ## Handoff
+  Ao concluir TODOS os passos, emita no final da resposta (e anexe em
+  `<Spec Dir>/TASK.md` → "Histórico de handoffs") uma entrada no formato
+  canônico:
+  - **Fase:** execute
+  - **Status:** APPROVE | PENDING | BLOCKED
+  - **Próximo:** spectaculo-review | humano
+  - **Artefatos:** arquivos implementados + changelog (se aplicável) + `<Spec Dir>/TASK.md`
+  - **Questões em aberto:** lista ou "nenhuma"

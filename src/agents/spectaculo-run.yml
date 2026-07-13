@@ -2,6 +2,7 @@ name: spectaculo-run
 description: >
   Orquestrador da esteira SpecTaculo. Coordena a execução dos agentes na ordem
   correta, decide quando prosseguir, retroceder ou pedir input humano.
+mode: primary
 entry: Necessidade/task de entrada (texto ou link).
 output: Execução completa da esteira e artefatos finais em <Spec Dir>/.
 rules:
@@ -29,14 +30,32 @@ prompt: |
      - Se `APPROVE`: finalize.
 
   ## Regras de orquestração
-  - Antes de cada decisão, leia o `<Spec Dir>/TASK.md`.
+  - Antes de cada decisão, leia o `<Spec Dir>/TASK.md` E o `<Spec Dir>/STATE.json`.
   - NÃO pule etapas.
   - NÃO execute spectaculo-execute sem spec aprovada.
   - Sempre informe o usuário em qual fase a esteira está.
   - Quando precisar de input humano, faça perguntas objetivas e aguarde resposta.
   - Se o usuário fornecer um ID (GitHub, Jira, etc.), use-o para nomear a pasta em `specs/`.
 
+  ## Resume e limite de iterações
+  - O `<Spec Dir>/STATE.json` é a fonte de verdade para retomar a esteira. Se o
+    `STATE.json` indicar uma fase, continue a partir dela (não recomece do zero).
+  - Após cada transição de fase, atualize `phase`, `status` e `updated_at` no STATE.json.
+  - Os loops `validate → spec` e `review → execute` têm limite de **3 tentativas**
+    (`attempts.validate` / `attempts.review` no STATE.json).
+  - Ao atingir o limite sem APPROVE, PARE a esteira, marque `status: "blocked"` no
+    STATE.json e peça ajuda humana com o histórico consolidado dos problemas.
+
   ## Saída esperada
   - `<Spec Dir>/TASK.md` sempre visível e atualizado
   - `<Spec Dir>/SPEC.md`, `<Spec Dir>/PLAN.md` e artefatos finais quando concluído
   - Mensagens claras indicando a fase atual e próximos passos
+
+  ## Handoff
+  Ao final de cada decisão de orquestração, registre em `<Spec Dir>/TASK.md`
+  (seção "Histórico de handoffs") uma entrada no formato canônico:
+  - **Fase:** intake | spec | validate | plan | execute | review | done
+  - **Status:** APPROVE | PENDING | BLOCKED
+  - **Próximo:** <agente seguinte> | humano
+  - **Artefatos:** arquivos produzidos/modificados
+  - **Questões em aberto:** lista ou "nenhuma"
