@@ -59,18 +59,13 @@ case "$TOOL" in
   *) echo "Erro: tool inválido '$TOOL'." >&2; exit 1 ;;
 esac
 
-# Mapeamento CLI -> (subdir de origem, padrão de arquivo)
+# Mapeamento CLI -> subdir de origem (copia-se o conteúdo integral de cada subdir,
+# pois cada um contém apenas os arquivos do tipo certo: SKILL.md, *.md, *.json).
 declare -A DIR_MAP=(
   [claude]=".claude/skills"
   [kimi]=".kimi-code/skills"
   [opencode]=".opencode/agents"
   [kiro]=".kiro/agents"
-)
-declare -A PATTERN_MAP=(
-  [claude]="*"
-  [kimi]="*"
-  [opencode]="*.md"
-  [kiro]="*.json"
 )
 
 # ---------------------------------------------------------------------------
