@@ -7,3 +7,9 @@ release.json
 release-response.json
 __pycache__/
 *.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+build/
+*.egg-info/
+.coverage.*

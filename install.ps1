@@ -21,10 +21,23 @@
     Se definido, executa src/generate.py antes de instalar.
     Aplica-se apenas à execução local.
 
+.PARAMETER Version
+    Versão/tag específica do GitHub (ex: v1.0.0). Padrão: latest (release mais recente).
+    Só se aplica à execução remota.
+
+.PARAMETER Uninstall
+    Remove os artefatos do SpecTaculo do diretório de destino.
+
+.PARAMETER Update
+    Equivalente a -Generate + reinstalação (modo local). No modo remoto,
+    apenas reinstala a versão mais recente por cima.
+
 .EXAMPLE
     .\install.ps1 -Tool claude
     .\install.ps1 -Tool all -Generate
     .\install.ps1 -Tool kimi -Target ..\meu-projeto
+    .\install.ps1 -Tool opencode -Version v1.2.0
+    .\install.ps1 -Tool all -Uninstall
     $env:SPECTACULO_TOOL = "claude"; irm https://raw.githubusercontent.com/JonathanBencke/SpecTaculo/main/install.ps1 | iex
 #>
 [CmdletBinding()]
@@ -37,7 +50,16 @@ param(
     [string]$Target = ".",
 
     [Parameter()]
-    [switch]$Generate
+    [switch]$Generate,
+
+    [Parameter()]
+    [string]$Version,
+
+    [Parameter()]
+    [switch]$Uninstall,
+
+    [Parameter()]
+    [switch]$Update
 )
 
 # Garante codificação UTF-8 para saída no console
@@ -48,14 +70,17 @@ function Test-Command($cmd) {
     $null -ne (Get-Command $cmd -ErrorAction SilentlyContinue)
 }
 
-function Install-Tool($tool, $source, $dest) {
-    $mapping = @{
+function Get-ToolMapping() {
+    return @{
         claude   = @{ Dir = ".claude/skills";     Pattern = "*" }
         kimi     = @{ Dir = ".kimi-code/skills";  Pattern = "*" }
         opencode = @{ Dir = ".opencode/agents";   Pattern = "*.md" }
         kiro     = @{ Dir = ".kiro/agents";       Pattern = "*.json" }
     }
+}
 
+function Install-Tool($tool, $source, $dest) {
+    $mapping = Get-ToolMapping
     $m = $mapping[$tool]
     $srcPath = Join-Path $source $m.Dir
     $dstPath = Join-Path $dest $m.Dir
@@ -76,6 +101,24 @@ function Install-Tool($tool, $source, $dest) {
     }
 }
 
+function Uninstall-Tool($tool, $dest) {
+    $mapping = Get-ToolMapping
+    $m = $mapping[$tool]
+    $dstPath = Join-Path $dest $m.Dir
+    if (Test-Path $dstPath) {
+        Remove-Item -Path $dstPath -Recurse -Force
+        Write-Host "[-] removido: $dstPath" -ForegroundColor Yellow
+    } else {
+        Write-Host "(nada para remover em $dstPath)" -ForegroundColor DarkGray
+    }
+}
+
+function Confirm-Checksum($zipFile, $expectedSha256) {
+    if (-not $expectedSha256) { return $false }
+    $actual = (Get-FileHash -Path $zipFile -Algorithm SHA256).Hash
+    return $actual -ieq $expectedSha256
+}
+
 # Validações
 if (-not $Tool) {
     Write-Error "Informe -Tool ou defina a variável de ambiente SPECTACULO_TOOL."
@@ -87,6 +130,18 @@ if (-not (Test-Path $Target)) {
     New-Item -ItemType Directory -Path $Target -Force | Out-Null
 }
 $Target = Resolve-Path $Target
+$tools = if ($Tool -eq "all") { @("claude", "kimi", "opencode", "kiro") } else { @($Tool) }
+
+# ---------------------------------------------------------------------------
+# Desinstalação
+# ---------------------------------------------------------------------------
+if ($Uninstall) {
+    Write-Host "Removendo SpecTaculo de: $Target"
+    foreach ($t in $tools) { Uninstall-Tool -tool $t -dest $Target }
+    Write-Host "Desinstalação concluída." -ForegroundColor Cyan
+    exit 0
+}
+
 Write-Host "Instalando SpecTaculo para: $Tool"
 Write-Host "Destino: $Target"
 
@@ -99,11 +154,17 @@ if ($RemoteMode) {
     $TempDir = Join-Path $env:TEMP ("SpecTaculo-" + [System.Guid]::NewGuid().ToString())
     New-Item -ItemType Directory -Path $TempDir -Force | Out-Null
 
-    Write-Host "Modo remoto detectado. Buscando release mais recente..."
+    $ReleaseLabel = if ($Version) { "tag $Version" } else { "latest" }
+    $ReleaseUrl = if ($Version) {
+        "https://api.github.com/repos/JonathanBencke/SpecTaculo/releases/tags/$Version"
+    } else {
+        "https://api.github.com/repos/JonathanBencke/SpecTaculo/releases/latest"
+    }
+    Write-Host "Modo remoto detectado. Buscando release ($ReleaseLabel)..."
     try {
-        $release = Invoke-RestMethod -Uri "https://api.github.com/repos/JonathanBencke/SpecTaculo/releases/latest" -UseBasicParsing
+        $release = Invoke-RestMethod -Uri $ReleaseUrl -UseBasicParsing
     } catch {
-        Write-Error "Falha ao buscar o release mais recente: $_"
+        Write-Error "Falha ao buscar o release ($ReleaseLabel): $_"
         exit 1
     }
 
@@ -123,6 +184,26 @@ if ($RemoteMode) {
         exit 1
     }
 
+    # Verificação de checksum (asset .sha256 publicado ao lado do zip)
+    $shaAsset = $release.assets | Where-Object { $_.name -eq "$($asset.name).sha256" } | Select-Object -First 1
+    if ($shaAsset) {
+        Write-Host "Verificando checksum SHA256..."
+        try {
+            $shaContent = (Invoke-WebRequest -Uri $shaAsset.browser_download_url -UseBasicParsing).Content
+            $expected = ($shaContent -split '\s+')[0].Trim()
+            if (Confirm-Checksum -zipFile $zipFile -expectedSha256 $expected) {
+                Write-Host "Checksum OK." -ForegroundColor Green
+            } else {
+                Write-Error "Checksum divergente. Abortando por segurança."
+                exit 1
+            }
+        } catch {
+            Write-Warning "Não foi possível verificar o checksum ($_), prosseguindo."
+        }
+    } else {
+        Write-Host "Aviso: nenhum checksum .sha256 publicado; pulando verificação." -ForegroundColor DarkYellow
+    }
+
     Write-Host "Extraindo release..."
     Expand-Archive -Path $zipFile -DestinationPath $TempDir -Force
     $ScriptDir = $TempDir
@@ -139,13 +220,13 @@ try {
     }
 
     # Regenera artefatos se solicitado (apenas modo local)
-    if (-not $RemoteMode -and $Generate) {
+    if (-not $RemoteMode -and ($Generate -or $Update)) {
         if (-not $PythonPath) {
             Write-Error "Python não encontrado. Instale o Python ou crie um venv com as dependências."
             exit 1
         }
         Write-Host "Gerando artefatos com: $PythonPath"
-        & $PythonPath (Join-Path $ScriptDir "src/generate.py") $Tool
+        & $PythonPath (Join-Path $ScriptDir "src/generate.py") $Tool --clean
         if ($LASTEXITCODE -ne 0) {
             Write-Error "Falha ao gerar artefatos."
             exit 1
@@ -154,12 +235,21 @@ try {
 
     $source = Join-Path $ScriptDir "generated"
     if (-not (Test-Path $source)) {
-        Write-Error "Diretório 'generated' não encontrado em '$ScriptDir'."
-        exit 1
+        # Auto-gera se estiver em modo local e o Python estiver disponível.
+        if (-not $RemoteMode -and $PythonPath) {
+            Write-Host "Diretório 'generated' ausente. Gerando automaticamente..." -ForegroundColor Yellow
+            & $PythonPath (Join-Path $ScriptDir "src/generate.py") $Tool
+            if ($LASTEXITCODE -ne 0) {
+                Write-Error "Falha ao gerar artefatos automaticamente."
+                exit 1
+            }
+        } else {
+            Write-Error "Diretório 'generated' não encontrado em '$ScriptDir'."
+            exit 1
+        }
     }
 
     # Instalação
-    $tools = if ($Tool -eq "all") { @("claude", "kimi", "opencode", "kiro") } else { @($Tool) }
     foreach ($t in $tools) {
         Install-Tool -tool $t -source $source -dest $Target
     }

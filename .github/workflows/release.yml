@@ -1,0 +1,71 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Gerar zip + SHA256 e publicar release
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Instalar dependências
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Rodar testes (gate de qualidade)
+        run: |
+          pip install -r requirements-dev.txt
+          pytest tests/ -q
+
+      - name: Gerar artefatos para todas as CLIs
+        run: python src/generate.py all --clean
+
+      - name: Validar todos os JSONs do kiro
+        run: |
+          for f in generated/.kiro/agents/*.json; do
+            python -c "import json,sys; json.load(open(sys.argv[1], encoding='utf-8'))" "$f"
+          done
+
+      - name: Empacotar release
+        id: pack
+        run: |
+          VERSION="${GITHUB_REF_NAME:-unknown}"
+          STAGE="SpecTaculo-${VERSION}"
+          mkdir -p "dist/${STAGE}"
+          # Inclui apenas o que o installer remoto precisa: generated/ + scripts + src.
+          cp -r generated "dist/${STAGE}/generated"
+          cp -r src "dist/${STAGE}/src"
+          cp install.ps1 install.sh README.md LICENSE requirements.txt "dist/${STAGE}/" 2>/dev/null || true
+          # Cria um .venv vazio para o installer detectar modo local de forma estável? Não.
+          cd dist
+          zip -r "../${STAGE}.zip" "${STAGE}"
+          cd ..
+          # Calcula SHA256 e publica como asset adjacente.
+          sha256sum "${STAGE}.zip" | awk '{print $1}' > "${STAGE}.zip.sha256"
+          echo "zip=${STAGE}.zip" >> "$GITHUB_OUTPUT"
+          echo "sha=${STAGE}.zip.sha256" >> "$GITHUB_OUTPUT"
+          ls -la "${STAGE}.zip" "${STAGE}.zip.sha256"
+
+      - name: Publicar release no GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            ${{ steps.pack.outputs.zip }}
+            ${{ steps.pack.outputs.sha }}
