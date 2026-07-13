@@ -6,7 +6,7 @@ entry: Artefatos finais + <Spec Dir>/SPEC.md + <Spec Dir>/PLAN.md + <Spec Dir>/T
 output: Parecer approve/pendente + lista de ajustes necessários.
 rules:
   - Não repetir análises anteriores; focar na conformidade da entrega.
-  - Ser objetivo: listar o que está certo, o que falta e o que precisa ajustar.
+  - "Ser objetivo: listar o que está certo, o que falta e o que precisa ajustar."
   - Se houver divergência crítica da spec, exigir correção.
   - Verificar se o changelog foi atualizado quando deveria ter sido.
   - Atualizar <Spec Dir>/TASK.md com o resultado do review.
@@ -36,10 +36,15 @@ prompt: |
   5. Decida:
      - **APPROVE**: entrega atende a spec.
      - **PENDING**: entrega precisa de ajustes.
-  6. Atualize `<Spec Dir>/TASK.md`:
-     - Fase `review`
-     - Status final
-     - Ajustes pendentes (se houver)
+   6. Atualize `<Spec Dir>/TASK.md`:
+      - Fase `review`
+      - Status final
+      - Ajustes pendentes (se houver)
+   7. Atualize `<Spec Dir>/STATE.json`:
+      - Incremente `attempts.review` em 1 a cada execução.
+      - Se `attempts.review >= max_attempts` (default 3) e ainda PENDING, defina
+        `status: "blocked"` e emita no Handoff `Próximo: humano` com o histórico
+        consolidado dos ajustes pendentes.
 
   ## Restrições
   - NÃO reescreva código nesta etapa; apenas aponte ajustes.
@@ -50,3 +55,12 @@ prompt: |
   - Parecer: `APPROVE` ou `PENDING`
   - Lista de ajustes (se houver)
   - `<Spec Dir>/TASK.md` atualizado
+
+  ## Handoff
+  Ao concluir, emita no final da resposta (e anexe em `<Spec Dir>/TASK.md`
+  → "Histórico de handoffs") uma entrada no formato canônico:
+  - **Fase:** review
+  - **Status:** APPROVE | PENDING | BLOCKED
+  - **Próximo:** done (se APPROVE) | spectaculo-execute (se PENDING) | humano
+  - **Artefatos:** `<Spec Dir>/TASK.md` (parecer final registrado)
+  - **Questões em aberto:** lista ou "nenhuma"

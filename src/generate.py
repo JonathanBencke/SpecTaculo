@@ -12,12 +12,19 @@ Suporta:
 
 import argparse
 import json
-import os
+import shutil
 import sys
 from pathlib import Path
 
-import yaml
 from jinja2 import Environment, FileSystemLoader
+
+# Permite execução tanto como script (python src/generate.py) quanto como
+# pacote instalado (spectaculo-generate).
+_HERE = Path(__file__).resolve().parent
+if str(_HERE) not in sys.path:
+    sys.path.insert(0, str(_HERE))
+
+from schema import AgentSpec  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC_AGENTS = ROOT / "src" / "agents"
@@ -44,21 +51,41 @@ TARGETS = {
 }
 
 
-def load_agent(path: Path) -> dict:
-    with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+def load_agent(path: Path) -> AgentSpec:
+    """Carrega e valida um agente a partir de um YAML."""
+    return AgentSpec.from_yaml(path)
 
 
 def _tojson_unicode(value, indent: int = 2) -> str:
     return json.dumps(value, ensure_ascii=False, indent=indent)
 
 
-def render(tool: str, agent: dict) -> str:
+def render(tool: str, agent: AgentSpec) -> str:
     config = TARGETS[tool]
-    env = Environment(loader=FileSystemLoader(TEMPLATES))
+    env = Environment(
+        loader=FileSystemLoader(TEMPLATES),
+        trim_blocks=True,
+        lstrip_blocks=True,
+        keep_trailing_newline=True,
+    )
     env.filters["tojson_unicode"] = _tojson_unicode
     template = env.get_template(config["template"])
-    return template.render(**agent)
+    context = agent.model_dump()
+    context["tool"] = tool
+    rendered = template.render(**context)
+    return rendered.lstrip("\n")
+
+
+def _clean_target_root(tool: str) -> Path:
+    """Diretório-base a ser removido no --clean.
+
+    Calcula o ancestral comum do padrão de saída (antes do placeholder
+    {name}). Funciona para paths com {name} em diretório (Claude/kimi/opencode)
+    ou como nome de arquivo (kiro).
+    """
+    pattern = TARGETS[tool]["path"]
+    pre = pattern.split("{name}", 1)[0].rstrip("/\\")
+    return GENERATED / pre
 
 
 def generate(tool: str, clean: bool = False) -> None:
@@ -69,14 +96,20 @@ def generate(tool: str, clean: bool = False) -> None:
     tools = list(TARGETS.keys()) if tool == "all" else [tool]
 
     for t in tools:
-        target_dir = GENERATED / TARGETS[t]["path"].split("/{name}/")[0]
+        target_dir = _clean_target_root(t)
         if clean and target_dir.exists():
-            import shutil
             shutil.rmtree(target_dir)
 
+    errors: list[tuple[Path, Exception]] = []
     for agent_file in sorted(SRC_AGENTS.glob("*.yml")):
-        agent = load_agent(agent_file)
-        name = agent["name"]
+        try:
+            agent = load_agent(agent_file)
+        except Exception as exc:
+            errors.append((agent_file, exc))
+            print(f"[!] YAML inválido: {agent_file.name} -> {exc}", file=sys.stderr)
+            continue
+
+        name = agent.name
         for t in tools:
             relative_path = TARGETS[t]["path"].format(name=name)
             output_path = GENERATED / relative_path
@@ -85,6 +118,13 @@ def generate(tool: str, clean: bool = False) -> None:
             with open(output_path, "w", encoding="utf-8") as f:
                 f.write(rendered)
             print(f"Gerado: {output_path.relative_to(ROOT)}")
+
+    if errors:
+        print(
+            f"\n[x] {len(errors)} agente(s) com YAML inválido. Build abortado.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
 
 def main() -> None:

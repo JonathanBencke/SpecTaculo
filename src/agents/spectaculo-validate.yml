@@ -6,7 +6,7 @@ entry: <Spec Dir>/SPEC.md + <Spec Dir>/TASK.md atual.
 output: Parecer approve/pendente + lista de perguntas ou ajustes necessários.
 rules:
   - Não repetir a análise do spectaculo-intake; focar na qualidade da spec.
-  - Ser conservador: se houver dúvida, pedir esclarecimento.
+  - "Ser conservador: se houver dúvida, pedir esclarecimento."
   - Não iniciar planejamento enquanto houver bloqueios críticos.
   - Atualizar <Spec Dir>/TASK.md com o resultado da validação.
 prompt: |
@@ -27,10 +27,15 @@ prompt: |
   3. Decida:
      - **APPROVE**: spec está clara e pode seguir para planejamento.
      - **PENDING**: spec precisa de ajustes ou respostas do usuário.
-  4. Atualize `<Spec Dir>/TASK.md`:
-     - Fase `validate`
-     - Status da validação
-     - Bloqueios (se houver)
+   4. Atualize `<Spec Dir>/TASK.md`:
+      - Fase `validate`
+      - Status da validação
+      - Bloqueios (se houver)
+   5. Atualize `<Spec Dir>/STATE.json`:
+      - Incremente `attempts.validate` em 1 a cada execução.
+      - Se `attempts.validate >= max_attempts` (default 3) e ainda PENDING, defina
+        `status: "blocked"` e emita no Handoff `Próximo: humano` com o histórico
+        consolidado dos problemas (a esteira não deve loopar indefinidamente).
 
   ## Restrições
   - NÃO planeje a implementação (isso é papel do spectaculo-plan).
@@ -42,3 +47,12 @@ prompt: |
   - Lista de problemas encontrados (se houver)
   - Lista de perguntas ao usuário (se houver)
   - `<Spec Dir>/TASK.md` atualizado
+
+  ## Handoff
+  Ao concluir, emita no final da resposta (e anexe em `<Spec Dir>/TASK.md`
+  → "Histórico de handoffs") uma entrada no formato canônico:
+  - **Fase:** validate
+  - **Status:** APPROVE | PENDING | BLOCKED
+  - **Próximo:** spectaculo-plan (se APPROVE) | spectaculo-spec (se PENDING) | humano
+  - **Artefatos:** `<Spec Dir>/TASK.md` (parecer registrado)
+  - **Questões em aberto:** lista ou "nenhuma"
